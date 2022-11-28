@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Identifik Tecnología SAS | Cola de turnos</title>
+	<link href="http://fonts.googleapis.com/css?family=Kristi|Alegreya+Sans:300,800" rel="stylesheet" type="text/css">
+	<!--<link href="{{ url_for('static',filename='styles/font-awesome.min.css')}}" rel="stylesheet">
+	<link rel="stylesheet" href="{{ url_for('static',filename='styles/style.css')}}">
+	<link rel="stylesheet" href="{{ url_for('static',filename='styles/timelify.css')}}">
+	-->
+
+
+	<link rel="stylesheet" type="text/css"
+		href="https://cdn.jsdelivr.net/gh/ycodetech/horizontal-timeline-2.0@2/css/horizontal_timeline.2.0.min.css">
+	<!-- CSS only -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+		integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+
+
+</head>
+<style>
+	.card-img-top {
+		border-radius: 50%;
+		margin: 0 auto;
+		box-shadow: 0 0 10px rgba(0, 0, 0, .2);
+		object-fit: cover;
+		width: 130px;
+		height: 130px;
+	}
+</style>
+
+<body>
+	<script>
+		/*
+		* POST http://xxx.xxx.xxx.xxx:5000/sms
+		* Content-Type: application/json
+		* Authorization: Basic admin password
+		* {
+		* "text": "Hello, how are you?",
+		* "number": "+420xxxxxxxxx"
+		*}
+		*/
+		function sendSMS(text,number){
+			var url = "";
+			var auth = "";
+			var data = {
+				"text": text,
+				"number": number
+			};
+			$.post(url, data, function(data, status){
+				//show toastr notification
+				toastr.success('SMS enviado');
+			});
+		
+		}
+	</script>
+
+	<img src="{{ url_for('static',filename='images/logo.png')}}" class="img-fluid" alt="Responsive image">
+	<div class="horizontal-timeline" id="example">
+		<div class="events-content">
+			<div class="container">
+				<div class="row row justify-content-around">
+					<div class="col-4">
+						<ol>
+							<li class="event-board" data-horizontal-timeline='{"date": "{{now}}","customDisplay": "Inicio {{now}}"}'>Inicio</li>
+							<!--
+						<li class="selected mx-auto p-3" data-horizontal-timeline='{"date": "10/10/2022 12:00"}'>
+							<div class="card" style="width: 18rem;">
+							  <img src="{{ url_for('static',filename='images/1.jpeg')}}"  height="500px" class="card-img-top" alt="...">
+							  <div class="card-body">
+								<h5 class="card-title">Emanuel</h5>
+								<p class="card-text">tiempo restante: 30 min</p>
+								  <a href="#" class="btn btn-primary" onclick="call('Emanuel')"><i class="fas fa-bell"></i>llamada</a>
+							  </div>
+							</div>
+						</li>
+						<li data-horizontal-timeline='{"date": "10/10/2022 12:30"}'>
+							<div class="card" style="width: 18rem;">
+							  <img src="{{ url_for('static',filename='images/2.jpeg')}}" class="card-img-top" alt="...">
+							  <div class="card-body">
+								<h5 class="card-title">Juan Camilo</h5>
+								<p class="card-text">Tiempo restante: 30 min</p>
+								<a href="#" class="btn btn-primary" onclick="call('Juan Camilo')"><i class="fas fa-bell"></i>Llamada</a>
+							  </div>
+							</div>
+						</li>
+						<li data-horizontal-timeline='{"date": "10/10/2022 13:00"}'>
+							<div class="card" style="width: 18rem;">
+							  <img src="{{ url_for('static',filename='images/3.jpeg')}}" class="card-img-top" alt="...">
+							  <div class="card-body">
+								<h5 class="card-title">Dajan</h5>
+								<p class="card-text">Tiempo restante 30min</p>
+								  <a href="#" class="btn btn-primary" onclick="call('Dayan')"><i class="fas fa-bell"></i>Llamada</a>
+							  </div>
+							</div>
+						</li>
+					-->
+						</ol>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<button type="button" class="btn btn-danger" id="add_all">Iniciar desde las: </button>
+	<!-- add time picker am pm -->
+	<input type="time" id="appt" name="appt" min="09:00" max="18:00" required value="{{nowtime}}">
+	
+
+
+	<!-- <script src="{{ url_for('static',filename='scripts/jquery.js') }}"></script>
+<script src="{{ url_for('static',filename='scripts/jquery.timelify.js') }}"></script>
+-->
+	<!-- add ical.js from https://unpkg.com/ical.js@1.5.0/build/ical.js-->
+	<script src="https://unpkg.com/ical.js@1.5.0/build/ical.js"></script>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+	<script src="{{ url_for('static',filename='scripts/moment.js') }}"></script>
+	<script src="{{ url_for('static',filename='scripts/jquery.countdown.js') }}"></script>
+	<script src="{{ url_for('static',filename='scripts/horizontal_timeline.2.0.js')}}"></script>
+	<script>
+		var eventsInBoard = []; //array to save the events in the board
+		function sortByEndDate(a, b) {
+			var aName = a.datef;
+			var bName = b.datef;
+			return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
+		}
+		function goto(date) {
+			$('#example').horizontalTimeline('goTo', date);
+		}
+		//each events in the board every 10 seconds
+		setInterval(function () {
+			eventsInBoard = getEventsIdFromBoard();
+			//log
+			//console.log("events in board: "+eventsInBoard.length); //log
+			//print datetime now
+			//console.log("datetime now: "+moment().format('DD/MM/YYYY HH:mm')); //log
+			//each event in  board 
+			$.each(eventsInBoard, function (index, eventId) {
+				var eventItem = $('#' + eventId)
+				var strDate = eventItem.data('horizontal-timeline').date;
+				var date = moment(strDate, "DD/MM/YYYY HH:mm"); //convert string to date
+				//console.log(eventId,'=>',date.format('DD/MM/YYYY HH:mm')); //log
+				//if data is greater than current date
+				if (date.isBefore(moment())) {
+					//find card class child of item
+					var card = eventItem.find('.card');
+					//add wite text and co	lor info to card
+					card.addClass('text-white bg-info');
+
+				}
+
+			}
+			)
+		}, 10000); //each 10 seconds
+
+
+
+
+
+		//add all events
+
+		$('#add_all').click(function () {
+			console.log('add all');
+			//removel al class event-timeline
+			$('.event-timeline').remove();
+			//refresh time line
+			$('#example').horizontalTimeline('refresh');
+			//each every .data-horizontal-timeline li
+			var timeline = $('.horizontal-timeline');
+			var old_date = null;
+			$.ajax({
+				'url': '/events',
+				'type': 'GET',
+				dataType: 'json',
+				headers: {
+					'Content-Type': 'application/json',
+					'DOLAPIKEY': '{{ dolapikey }}'
+				},
+				'success': function (events, status, xhr) {
+					//if code is 200
+					if (xhr.status == 200) {
+						//add all events
+						//if is array sort by date
+						if (Array.isArray(events)) {
+							events.sort(sortByEndDate);
+						}
+
+						$.each(events, function (index, event) {
+							//if event is not in the board
+							if (!isInBoard(event.id)) {
+
+								//console.log("added",">>",event);
+								//add the event
+								var date_unix = event.datec;
+
+								var date = new Date(date_unix * 1000); //convert to milliseconds
+								//log datef
+								//	console.log("datef",date); //log datef
+								// format to 17/9/2016 12:00 with momment.js
+								//var date_formatted = moment(date).format('DD/MM/YYYY HH:mm'); //format to 9/17/2016 12:00
+
+								//console.log(date); // 9/17/2016
+								//create an element <li data-horizontal-timeline='{"date": "02/02/2002"}'>Event content description.</li>
+								var html = '<li class="event-board event-timeline" id="' + event.id + '" data-socid="' + event.fk_soc + '" data-horizontal-timeline=\'{"date": "' + formatDate(date) + '", "customDisplay":' + event.id + ',"other":1}\'>';
+								//get remaining time  from a date and curent datetime
+								var remainingTime = getRemainingTime(date); //get remaining time  from a date and curent datetime
+								//if event socid is empty return 0
+								if (!event.socid) {
+									return;
+								}
+
+								//get buildevent for third party
+								/*$.post('/buildevent/'+event.socid,{'time':remainingTime,'event':event},function(card){
+									html += card;
+									html += '</li>';
+									var lastDate=getEventDateFromBoardLessThan(date);
+									//log last date
+									console.log("lastDate",lastDate);
+									$('#example').horizontalTimeline(
+										'addEvent',
+										 html,
+										 'after',
+										 lastDate?lastDate:'31/10/2022 07:00'
+									); //add event to the board
+								}); //get buildevent for third party
+								*/
+								//same with ajax and appliation/json
+								$.ajax({
+									'url': '/buildevent/' + event.socid + '?time=' + remainingTime,
+									'type': 'POST',
+									'data': JSON.stringify(event),
+									contentType: 'application/json',
+									'success': function (card) {
+										html += card;
+										html += '</li>';
+										var lastDate = getEventDateFromBoardLessThan(date);
+										//log last date
+										console.log("lastDate", lastDate);
+										$('#example').horizontalTimeline(
+											'addEvent',
+											html,
+											'after',
+											lastDate ? lastDate : '31/10/2022 07:00'
+										); //add event to the board
+									}
+								});
+
+
+							}
+
+						});
+					}
+				}
+
+			});
+
+		});
+		//remaining time from a date and curent datetime
+		function getRemainingTime(then) {
+
+			return moment.utc(moment().diff(moment(then))).format("HH:mm:ss")
+
+		}
+		//format date to 17/9/2016 12:00 with momment.js
+		function formatDate(date) {
+			var date_formatted = moment(date).format('DD/MM/YYYY HH:mm:ss'); //format to 9/17/2016 12:00
+			return date_formatted;
+		}
+		function getDateFromEventBoard(eventId) {
+			var eventItem = $('#' + eventId)
+			//if no exist return -1
+			if (eventItem.length == 0) {
+				return -1;
+			}
+			console.log("eventItem", eventItem);
+			var strDate = eventItem.data('horizontal-timeline').date;
+			var date = moment(strDate, "DD/MM/YYYY HH:mm"); //convert string to date
+			return date;
+		}
+		$('#example').on("eventChanged.horizontalTimeline", function (event) {
+			//log event
+			console.log("eventChanged.horizontalTimeline"); //log event
+			if (event.currentEventDate == "01/01/2001" && event.timeStamp) {
+			}
+			console.log('The new selected date is ' + event.currentEventDate);
+		});
+		//get all events from the board
+		function getEventsIdFromBoard() {
+			var events = $('.event-board');
+			//map the events to get the id
+			var eventsId = events.map(function (index, event) {
+				return $(event).attr('id');
+			});
+			return eventsId;
+		}
+		//get event date where date is less than  date
+		function getEventDateFromBoardLessThan(date) {
+			var events = $('.event-board');
+			//sort by date
+			events.sort(function (a, b) {
+				var aDate = getDateFromEventBoard($(a).attr('id'));
+				var bDate = getDateFromEventBoard($(b).attr('id'));
+				if (aDate == -1 || bDate == -1) {
+					return 1;
+				}
+				return aDate.isBefore(bDate);
+			}); //sort by date
+			//log event data date
+			//console.log("events->date->",events.map(function(event){
+			//	return event;
+			//})); //log event data date
+			//get event with date more previous to date
+			var event = events.filter(function (index, event) {
+				var eventDate = getDateFromEventBoard($(event).attr('id'));
+				//if event date is -1 nothing to do
+				if (eventDate == -1) {
+					return false;
+				}
+				return eventDate.isBefore(date);
+			}); //sort by date
+			if (event.length == 0) {
+				return null;
+			}
+			return $(event).data('horizontal-timeline').date; //get the date of the event
+		}
+		//if id exists in the board
+		function isInBoard(eventId) {
+			return document.getElementById(eventId) != null;
+		}
+		//function call, send name to route call and return adudio file path
+		let promises = [];
+		var Sound = (function () {
+			var df = document.createDocumentFragment();
+			return function Sound(src) {
+				var snd = new Audio(src);
+				df.appendChild(snd); // keep in fragment until finished playing
+				snd.addEventListener('ended', function () { df.removeChild(snd); });
+				snd.play();
+				return snd;
+			}
+		}());
+		function call(name) {
+			$.ajax({
+				url: '/call',
+				type: 'POST',
+				dataType: 'json',
+				data: { name: name },
+				success: function (data) {
+					console.log("/call response", data)
+					//play asynchronus audio
+					try {
+						var snd = Sound("data:audio/mp3;base64," + data.file);
+						console.log('Playing...');
+					} catch (err) {
+						console.log('Failed to play...' + err);
+					}
+
+				}
+			})
+
+		}
+		/* The Defaults */
+		$('#example').horizontalTimeline({ // ! Deprecated these individual options in favour of the object options. //
+			desktopDateIntervals: 200,
+			tabletDateIntervals: 150,
+			mobileDateIntervals: 120,
+			minimalFirstDateInterval: true,
+			// ! End Deprecated options //
+
+			/* New object options... */
+			// If object doesn't exist in the user options, then default to the individual options,
+			// otherwise use the object.
+
+			// Can not use in conjunction with the single options...
+			// If both single and object options are set in the options, the object will take precedence.
+
+			dateIntervals: {
+				"desktop": 200,
+				"tablet": 150,
+				"mobile": 120,
+				"minimal": true
+			},
+			/* End new object options */
+
+			dateDisplay: "dateTime", // dateTime, date, time, dayMonth, monthYear, year
+			dateOrder: "normal", // normal, reverse
+
+			autoplay: true,
+			autoplaySpeed: 5,
+			autoplayPause_onHover: false,
+
+			useScrollWheel: false,
+			useTouchSwipe: true,
+			useKeyboardKeys: false,
+			addRequiredFile: true,
+			useFontAwesomeIcons: true,
+			useNavBtns: true,
+			useScrollBtns: true,
+
+			// ! Deprecated these individual options in favour of the object options. //
+			iconBaseClass: "fas fa-3x", // Space separated class names
+			scrollLeft_iconClass: "fa-chevron-circle-left",
+			scrollRight_iconClass: "fa-chevron-circle-right",
+			prev_iconClass: "fa-arrow-circle-left",
+			next_iconClass: "fa-arrow-circle-right",
+			pause_iconClass: "fa-pause-circle",
+			play_iconClass: "fa-play-circle",
+
+			animation_baseClass: "animationSpeed", // Space separated class names
+			enter_animationClass: {
+				"left": "enter-left",
+				"right": "enter-right"
+			},
+			exit_animationClass: {
+				"left": "exit-left",
+				"right": "exit-right"
+			},
+			// ! End Deprecated options //
+
+			/* New object options... */
+			// If object doesn't exist in the user options, then default to the individual options,
+			// otherwise use the object.
+
+			// Can not use in conjunction with the single options...
+			// If both single and object options are set in the options, the object will take precedence.
+
+			iconClass: {
+				"base": "fas fa-3x", // Space separated class names
+				"scrollLeft": "fa-chevron-circle-left",
+				"scrollRight": "fa-chevron-circle-right",
+				"prev": "fa-arrow-circle-left",
+				"next": "fa-arrow-circle-right",
+				"pause": "fa-pause-circle",
+				"play": "fa-play-circle"
+			},
+			animationClass: {
+				"base": "animationSpeed", // Space separated class names
+				"enter": {
+					"left": "enter-left",
+					"right": "enter-right"
+				},
+				"exit": {
+					"left": "exit-left",
+					"right": "exit-right"
+				},
+			},
+			/* End new object options */
+			contentContainerSelector: false // 
+			//false, ".container" [any selector string] 
+		});
+
+		$('#remove_all').click(function () {
+			//console.log('remove all');
+			//each every .data-horizontal-timeline li
+			var timeline = $('.horizontal-timeline');
+			//find li children
+			var li = timeline.find('li');
+			li.each(function () {
+				//get data
+				var data = $(this).data('horizontal-timeline');
+				//console.log(data.date);
+				//remove the event
+				$('#example').horizontalTimeline('removeEvent', data.date);
+			});
+
+		});
+
+		//http://localhost/dolibarr-dev/htdocs/public/agenda/agendaexport.php?format=ics&exportkey=3mNqgM485MZBLF20c3vS3Xrqh0Pd8jUi
+
+
+
+		$.ajax({
+			url: "http://localhost/dolibarr-dev/htdocs/public/agenda/agendaexport.php?format=ical&exportkey=3mNqgM485MZBLF20c3vS3Xrqh0Pd8jUi",
+			dataType: "text",
+			type: "GET",
+			//on success
+			success: function (data) {
+				//console.log(data);
+				//parse ical file
+				var jcalData = ICAL.parse(data);
+				var comp = new ICAL.Component(jcalData);
+				var vevents = comp.getAllSubcomponents('vevent');
+				//console.log(vevents);
+				//loop through events
+				vevents.forEach(function (vevent) {
+					var event = new ICAL.Event(vevent);
+					console.log(event);
+					//get event start date
+					var startDate = event.startDate.toJSDate();
+					//console.log(startDate);
+					//get event end date
+					var endDate = event.endDate.toJSDate();
+					//console.log(endDate);
+					//get event summary
+					var summary = event.summary;
+
+					//get event description
+					var description = event.description;
+					//console.log(description);
+					//get event location
+					var location = event.location;
+					//console.log(location);
+
+
+					//create event object to add to horizontal timeline
+					var li = $(`<li data-horizontal-timeline='' data-name="name">
+							<div class="card" style="width: 18rem;">
+							  <img src="nophoto.jpeg" class="card-img-top" alt="...">
+							  <div class="card-body">
+								<h5 class="card-title">Name</h5>
+								<p class="card-text">Tiempo restante 0min</p>
+								  <a href="#" class="btn btn-primary" ><i class="fas fa-bell"></i>Llamada</a>
+							  </div>
+							</div>
+						</li> `);
+					//add time
+					li.data('horizontal-timeline=', { "date": datetime_str });
+					//add name to call
+					li.data('name', name_to_call);
+					//find img child
+					var img = li.find('img');
+					//add img src
+					img.attr('src', 'https://picsum.photos/200/300');
+					//find card-title child and add name
+					li.find('.card-title').text(name);
+					//find card-text child and add time
+					li.find('.card-text').text('Tiempo restante ' + remain + 'min');
+					//find btn child and add onclick event
+					li.find('.btn').attr('onclick', 'call(\'' + name_to_call + '\')');
+					//get outer html
+					var html = li.prop('outerHTML');
+
+					//add li to horizontal timeline							
+					$('#example').horizontalTimeline('addEvent', html, 'after', old_datetime_str);
+				});
+			},
+			//on error
+			error: function (data, status, error) {
+				//log error code and message
+				console.log("Error: " + error);
+
+
+
+
+
+			}
+
+
+		});
+		function initEvent(event, id, datep, datef) {
+			event.preventDefault();
+			//hide init buton
+			$('#init-' + id).hide('slow');
+			//log id
+
+
+			//get date now unisx stamp in seconds
+			var now = Math.floor(Date.now() / 1000);
+			//duration event in seconds
+			var duration = datef - datep;
+
+			$.ajax({
+				url: 'event/start/' + id,
+				type: 'PUT',
+				dataType: 'json',
+				contentType: "application/json",
+				data: JSON.stringify({
+					"datep": now,
+					"datef": now + duration
+
+				}),
+				success: function (result) {
+					//log result
+					console.log(result);
+				},
+				error: function (result) {
+					//log error
+					console.error(result);
+				}
+			});
+			console.log('initEvent: ' + id);
+			initCountdown(id);
+		}
+		function initCountdown(id) {
+			var counter = $('#count-' + id);
+			counter.countDown({
+				label_hh: " horas ",
+				label_mm: " min ",
+				label_ss: " seg",
+			});
+			counter.on('time.elapsed', function () {
+				var now = Math.floor(Date.now() / 1000);
+				var id = $(this).data('id');
+				//update event datef2 and end
+				endEvent(id);
+				//show call button
+				$('#call-' + id).show('slow');
+				//call to name
+				call($(this).data('name'));
+
+			});
+		}
+		function endEvent(id) {
+			//get date now unisx stamp in seconds
+			$.ajax({
+				url: 'event/end/' + id,
+				type: 'PUT',
+				dataType: 'json',
+				contentType: "application/json",
+				success: function (data) {
+					console.log(data);
+				}
+			});
+			console.log('endEvent: ' + id);
+
+		}
+		// function set card status
+		function setCardStatus(card, status) {
+				//remove all bg-* classes
+				card.closest('.card').removeClass(function (index, className) {
+					return (className.match(/(^|\s)bg-\S+/g) || []).join(' ');
+				});
+				//add bg-warning class
+				card.addClass('bg-' + status);
+			}
+	</script>
+
+</body>
+
+</html>

@@ -1,0 +1,72 @@
+<div class="card bg-primary">
+    <img src="{{img}}" class="card-img-top" alt="...">
+    <div class="card-body">
+        <h5 class="card-title">{{title}} - {{e.id}}</h5>
+       
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">{{label}}</li>           
+        </ul>
+        <p class="card-text"> <h4 ><time  data-name="{{call}}" data-id="{{e.id}}" id="count-{{e.id}}" datetime="{{time_remaing}}">Expira en {{time_remaing}}</time></h4></p>
+        <a href="#" data-datef="{{e.datef}}" data-datep="{{e.datep}}" data-percent="{{e.percentage}}" data-id="{{e.id}}" id="init-{{e.id}}" class="btninit btn btn-warning" onclick="initEvent(event,{{e.id}},{{e.datep}},{{e.datef}})"><i class="fas fa-play"></i>Iniciar</a>
+        <a href="#" data-datef="{{e.datef}}" data-datep="{{e.datep}}" data-percent="{{e.percentage}}" data-id="{{e.id}}" id="del-{{e.id}}" class="btndel btn btn-danger" onclick="endEvent({{e.id}})"><i class="fas fa-trash"></i>Eliminar</a>
+        <a href="#"  data-datef="{{e.datef}}" data-datep="{{e.datep}}" id="call-{{e.id}}" data-id="{{e.id}}" class="btncall btn btn-primary" onclick="call('{{call}}')"><i class="fas fa-bell"></i>Llamada</a>
+    </div>
+</div>
+<!--scripts-->
+<script>
+    
+    //each class btninit
+    $('.btninit').each(function(){
+        var percent = $(this).data('percent');
+        var datef = $(this).data('datef');
+
+        var id = $(this).data('id');
+        var btn = $(this);
+        var btnCall = $('#call-'+id);
+        var btnInit = $('#init-'+id);
+        var btnDel = $('#del-'+id);
+        //hide del
+        btnDel.hide();
+        //hide call
+        btnCall.hide();
+
+        var card= $(this).closest('.card');
+
+        //log id and percent
+        console.log('timer id: '+id+' percent: ',percent,'%');
+        //if percent is -1 hide call button
+        if(percent == -1){
+            btnCall.hide();
+        }else if (percent == 0){
+            btnInit.show();
+            btnCall.hide();
+            
+            //set primary status to card
+            setCardStatus(card,'primary');
+        }else if(percent > 0 && percent < 100){
+            //if percent is 50 check datef is greater than now
+            //now in seconds
+            var now = Math.floor(Date.now() / 1000);
+            //log datef and now
+            console.log('datef: ',datef,' now: ',now);
+            if(percent == 50 && datef < now){
+                //find first parent by class card and add class bg-success
+            setCardStatus(card,'success');
+              endEvent(id);              
+            }else{
+                initCountdown(id);
+            }
+            btnInit.hide();
+            btnCall.show();
+        }else if(percent == 100){
+            //find first parent by class card and add class bg-danger
+            setCardStatus(card,'danger');
+            btnInit.hide();
+            btnCall.show();
+            btnDel.show();
+        }
+        
+     
+
+    });
+</script>
